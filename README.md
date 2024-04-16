@@ -52,7 +52,7 @@ gomls.exe list
 
 ## Screenshots
 
-### CSV output, sold listings
+### CSV output
 
 ![CSV, no filter](media/csv.png)
 
