@@ -1,23 +1,43 @@
 ﻿package helpers
 
 // House struct holds scraped data
+// Pointers denote that data is not from the JSON and can be empty
 type House struct {
-	Address      string `json:"address,omitempty"`
-	Baths        string `json:"baths,omitempty"`
-	Beds         string `json:"beds,omitempty"`
-	Description  string `json:"description,omitempty"`
-	Img          string `json:"img,omitempty"`
-	Link         string `json:"link,omitempty"`
-	ListDate     string `json:"listdate,omitempty"`
-	ListPrice    string `json:"listprice,omitempty"`
-	MapsURL      string `json:"mapsurl,omitempty"`
-	PriceDiff    string `json:"pricediff,omitempty"`
-	Showing      string `json:"showing,omitempty"`
-	Size         string `json:"size,omitempty"`
-	SoldDate     string `json:"solddate,omitempty"`
-	SoldPrice    string `json:"soldprice,omitempty"`
-	Status       string `json:"type,omitempty"`
-	PropertyType string `json:"propertytype,omitempty"`
+	Property struct {
+		DatePostedString       string `json:"datePostedString,omitempty"`
+		Description            string `json:"description,omitempty"`
+		DesktopWebHdpImageLink string `json:"desktopWebHdpImageLink,omitempty"`
+		HdpUrl                 string `json:"hdpUrl,omitempty"`
+		HomeStatus             string `json:"homeStatus,omitempty"`
+		HomeType               string `json:"homeType,omitempty"`
+
+		// Non-JSON fields (manually manipulated)
+		Address   string `json:"address,omitempty"`
+		FullUrl   string `json:"fullUrl,omitempty"`
+		MapsUrl   string `json:"mapsURL,omitempty"`
+		PriceDiff int    `json:"priceDiff",omitempty`
+		ListPrice int    `json:"listPrice,omitempty"`
+		ListDate  string `json:"listDate,omitempty"`
+		SoldPrice int    `json:"soldPrice,omitempty"`
+		SoldDate  string `json:"soldDate,omitempty"`
+
+		ResoFacts struct {
+			Bathrooms  int    `json:"bathrooms,omitempty"`
+			Bedrooms   int    `json:"bedrooms,omitempty"`
+			LivingArea string `json:"livingArea,omitempty"`
+		} `json:"resoFacts,omitempty"`
+
+		OpenHouseSchedule []struct {
+			StartTime string `json:"startTime,omitempty"`
+			EndTime   string `json:"endTime,omitempty"`
+		} `json:"openHouseSchedule,omitempty"`
+
+		PriceHistory []struct {
+			Date  string `json:"date,omitempty"`
+			Event string `json:"event,omitempty"`
+			Price int    `json:"price,omitempty"`
+		} `json:"priceHistory,omitempty"`
+	} `json:"property,omitempty"`
 }
 
 // HouseSlice is a slice of House

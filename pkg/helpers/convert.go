@@ -3,9 +3,7 @@ package helpers
 import (
 	"fmt"
 	"reflect"
-	"regexp"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -63,19 +61,4 @@ func StructToSlice(s interface{}) []string {
 	}
 
 	return slice
-}
-
-// JsonToMap converts a JSON-formatted string to a map[string]string
-func JsonToMap(json string) map[string]string {
-	jsonStr := strings.ReplaceAll(json, `\`, "")
-	re := regexp.MustCompile(`"([^"]+)":"?([^"]+)"?`)
-	matches := re.FindAllStringSubmatch(jsonStr, -1)
-	dataMap := make(map[string]string)
-
-	// Extract keys and values from matches
-	for _, match := range matches {
-		dataMap[match[1]] = match[2]
-	}
-
-	return dataMap
 }

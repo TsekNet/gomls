@@ -102,11 +102,15 @@ func (l ListCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...any) subcomm
 	case "plain":
 		outputPlain(d)
 	case "table":
-		outputTable(d)
+		err := outputTable(d)
+		if err != nil {
+			fmt.Fprintf(f.Output(), "Error generating table output: %v\n", err)
+			return subcommands.ExitFailure
+		}
 	case "json":
 		err := outputJSON(d)
 		if err != nil {
-			fmt.Fprintf(f.Output(), "Error generating CSV output: %v\n", err)
+			fmt.Fprintf(f.Output(), "Error generating JSON output: %v\n", err)
 			return subcommands.ExitFailure
 		}
 	default:
@@ -118,6 +122,7 @@ func (l ListCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...any) subcomm
 	return subcommands.ExitSuccess
 }
 
+// TODO: Fix all formats
 func outputHTML(d helpers.Details) error {
 	houses := zillow.Query(d)
 
@@ -190,7 +195,7 @@ func outputPlain(d helpers.Details) {
 	}
 }
 
-func outputTable(d helpers.Details) {
+func outputTable(d helpers.Details) error {
 	t := table.New().
 		Border(lipgloss.NormalBorder()).
 		BorderRow(true).
@@ -209,10 +214,11 @@ func outputTable(d helpers.Details) {
 		Rows(helpers.SliceToRow(zillow.Query(d))...)
 
 	if t == nil {
-		return
+		return fmt.Errorf("failed to create table")
 	}
 
 	fmt.Println(t)
+	return nil
 }
 
 func outputJSON(d helpers.Details) error {

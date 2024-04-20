@@ -64,6 +64,33 @@ gomls.exe list
 
 As a side project, mostly to get more comfortable with Go I aimed to build a tool that would scrape zillow.com for recent listings and sales. I aimed to allow flexible output types via a cross-platform (Linux, Mac, Windows) binary that can be shipped to friends to run on their systems. I also wanted to learn more about web scraping in Go (as opposed to using Python's `beautifulsoup` library). I didn't find any free, open source web scrapers for real estate data when searching online. All the ones I found were either a Chrome extension, or a paid API.
 
+## Visualize Listings in Google Maps
+
+An example of where data exported from this binary becomes useful is importing the CSV into Google Maps via the steps below:
+
+First Execute `gomls list -output=csv` with the appropriate filters (price, location, beds, etc.).
+
+### Import into Google Maps
+
+1. Navigate to [GoogleMy Maps](https://www.google.com/maps/d/u/0/home?hl=en&hl=en) in your desktop browser of choice
+1. Click New icon (red circular button, bottom right)
+1. Click `Create`
+1. Click `Import` (under `Untitled layer`)
+1. In the `Upload` dialogue, click `Browse` and navigate to your computer's temp directory, where you will find `listings.csv`
+1. Choose the `Address` when asked to `Choose columns to position your placemarks`
+1. Choose either `Address` when asked to `Choose a column to title your markers`
+
+### Style your custom Map
+
+1. Click `Individual Styles` (under `listings.csv`)
+1. Chose `Beds` for Group Places by
+1. Chose `ListPrice` or `SoldPrice` for `Set Labels`
+1. Enjoy your very own visualization of listings in Google Maps!
+
+Screenshot below as an example:
+
+![Custom Google Map](media/maps.png)
+
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.

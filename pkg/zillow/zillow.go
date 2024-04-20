@@ -2,9 +2,10 @@
 package zillow
 
 import (
+	"encoding/json"
 	"fmt"
 	"gomls/pkg/helpers"
-	"strconv"
+	"regexp"
 	"strings"
 	"time"
 
@@ -53,6 +54,78 @@ func init() {
 	})
 }
 
+func stringToJSON(jsonString string) *helpers.House {
+	// Create a string from the extracted JSON
+	var dataMap map[string]interface{}
+	json.Unmarshal([]byte(jsonString), &dataMap)
+	gdpClientCache := dataMap["props"].(map[string]interface{})["pageProps"].(map[string]interface{})["componentProps"].(map[string]interface{})["gdpClientCache"].(string)
+
+	// Strip the weird *SaleShopper* first JSON key
+	gdpClientCache = regexp.MustCompile(`{".*SaleShopper.*}":`).ReplaceAllString(gdpClientCache, "")
+	// Also strip the trailing closing bracket (from above)
+	gdpClientCache = gdpClientCache[:len(gdpClientCache)-1]
+
+	// Create a new House struct from the JSON
+	jsonHouse := new(helpers.House)
+
+	// Intentionally ignore errors, as some fields will be blank (not from JSON)
+	json.Unmarshal([]byte(gdpClientCache), jsonHouse)
+
+	return jsonHouse
+}
+
+func newDetails(d helpers.Details, h helpers.House) *helpers.House {
+	url := h.Property.HdpUrl
+	fullAddress := strings.SplitN(url, "/", -1)[2]
+	h.Property.Address = strings.Split(fullAddress, "_")[0]
+	h.Property.MapsUrl = fmt.Sprintf("https://maps.google.com/?q=%s", fullAddress)
+	h.Property.FullUrl = fmt.Sprintf("%s%s", base, url)
+
+	for k, v := range h.Property.PriceHistory {
+		if v.Event == "Listed for sale" && h.Property.ListPrice == 0 {
+			h.Property.ListPrice = v.Price
+			h.Property.PriceHistory = h.Property.PriceHistory[k:]
+		}
+
+		// Properties listed for sale aren't sold...
+		if d.Sold {
+			if v.Event == "Sold" && h.Property.SoldPrice == 0 {
+				h.Property.SoldPrice = v.Price
+				h.Property.PriceHistory = h.Property.PriceHistory[k:]
+			}
+
+			if h.Property.ListPrice != 0 && h.Property.SoldPrice != 0 {
+				h.Property.PriceDiff = h.Property.SoldPrice - h.Property.ListPrice
+			}
+		}
+	}
+
+	return &h
+}
+
+func filter(d helpers.Details, h helpers.House) bool {
+	if d.Baths > h.Property.ResoFacts.Bathrooms {
+		return false
+	}
+
+	if d.Beds > h.Property.ResoFacts.Bedrooms {
+		return false
+	}
+
+	if d.PropertyType != "" && d.PropertyType != h.Property.HomeType {
+		return false
+	}
+
+	if h.Property.SoldPrice != 0 && d.Price > h.Property.SoldPrice {
+		return false
+	}
+
+	if h.Property.ListPrice != 0 && d.Price > h.Property.ListPrice {
+		return false
+	}
+	return true
+}
+
 // Query that scrapes real estate listings from a website
 func Query(d helpers.Details) helpers.HouseSlice {
 	status := "for_sale/"
@@ -76,91 +149,22 @@ func Query(d helpers.Details) helpers.HouseSlice {
 	// __NEXT_DATA__ is a JSON-like object that contains metadata about the property
 	c.OnHTML("script#__NEXT_DATA__", func(e *colly.HTMLElement) {
 		// Only grab data from the property pages, ignore search results page
-		if !strings.Contains(e.Request.URL.Path, "/homedetails") {
-			return
-		}
-		h := helpers.House{}
-
-		dataMap := helpers.JsonToMap(e.Text)
-
-		url = dataMap["hdpUrl"]
-		fullAddress := strings.SplitN(url, "/", -1)[2]
-
-		m := map[string]string{
-			"address":      strings.ReplaceAll(fullAddress, "-", " "),
-			"baths":        strings.TrimSuffix(dataMap["bathrooms"], ","),
-			"beds":         strings.TrimSuffix(dataMap["bd"], ","),
-			"description":  dataMap["description"],
-			"img":          dataMap["url"],
-			"link":         base + url,
-			"listdate":     dataMap["datePostedString"],
-			"listprice":    strings.TrimSuffix(dataMap["listPrice"], ","),
-			"mapsurl":      fmt.Sprintf("https://maps.google.com/?q=%s", fullAddress),
-			"showing":      fmt.Sprintf("%s - %s", dataMap["startTime"], dataMap["endTime"]),
-			"size":         fmt.Sprintf("%s %s", strings.TrimSuffix(dataMap["livingAreaValue"], ","), dataMap["livingAreaUnitsShort"]),
-			"solddate":     helpers.MSToTime(strings.TrimSuffix(dataMap["dateSold"], ",")),
-			"soldprice":    strings.TrimSuffix(dataMap["lastSoldPrice"], ","),
-			"status":       dataMap["keystoneHomeStatus"],
-			"propertytype": dataMap["homeType"],
-		}
-
-		// Fields that need no manipulation
-		h.Address = m["address"]
-		h.Link = m["link"]
-		h.Img = m["img"]
-		h.MapsURL = m["mapsurl"]
-		h.Status = m["status"]
-
-		// Args passed via flags
-		h.Beds = m["beds"]
-		if be, err := strconv.Atoi(h.Beds); err != nil || be < d.Beds {
+		if !strings.Contains(e.Request.URL.Path, "homedetails") {
 			return
 		}
 
-		h.Baths = m["baths"]
-		if ba, err := strconv.Atoi(h.Baths); err != nil || ba < d.Baths {
+		// Convert the string to a JSON object
+		j := stringToJSON(e.Text)
+
+		// Initialize values in the House struct
+		h := newDetails(d, *j)
+
+		// House doesn't match filters, return early
+		if !filter(d, *h) {
 			return
 		}
 
-		h.PropertyType = m["propertytype"]
-		if d.PropertyType != "" && h.PropertyType != d.PropertyType {
-			return
-		}
-
-		// The rest of the fields need some manipulation
-		if !strings.Contains(m["description"], "null") {
-			h.Description = m["description"]
-		}
-
-		if m["showing"] != " - " {
-			h.Showing = m["showing"]
-		}
-
-		if !strings.Contains(m["size"], "null") && !strings.HasPrefix(m["size"], "0") {
-			h.Size = m["size"]
-		}
-
-		// TODO: Fix the list and sold dates
-		if d.Sold {
-			h.SoldPrice = m["soldprice"]
-			h.SoldDate = m["solddate"]
-
-			if h.SoldPrice != "" {
-				// Calculate the price difference
-				sp, _ := strconv.Atoi(h.SoldPrice)
-				lp, _ := strconv.Atoi(h.ListPrice)
-				h.PriceDiff = fmt.Sprintf("%d", sp-lp)
-			}
-		}
-
-		// Passed via Flag
-		h.ListPrice = m["listprice"]
-		if lp, err := strconv.Atoi(h.ListPrice); err != nil || lp < d.Price {
-			return
-		}
-		h.ListDate = m["listdate"]
-
-		houses = append(houses, h)
+		houses = append(houses, *h)
 	})
 
 	c.Visit(url)
