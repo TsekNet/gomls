@@ -16,31 +16,15 @@ import (
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/lipgloss/table"
 	"github.com/google/subcommands"
 )
 
 const (
-	purple    = lipgloss.Color("99")
-	gray      = lipgloss.Color("245")
-	lightGray = lipgloss.Color("241")
-	layout    = "2006-01-02"
+	layout = "2006-01-02"
 )
 
 var (
 	errLocation = errors.New("required flag -location is missing")
-	re          = lipgloss.NewRenderer(os.Stdout)
-
-	// HeaderStyle is the lipgloss style used for the table headers.
-	HeaderStyle = re.NewStyle().Foreground(purple).Bold(true).Align(lipgloss.Center).Background(gray)
-	// CellStyle is the base lipgloss style used for the table rows.
-	CellStyle = re.NewStyle().Padding(0, 1).Width(14)
-	// OddRowStyle is the lipgloss style used for odd-numbered table rows.
-	OddRowStyle = CellStyle.Copy().Foreground(gray)
-	// EvenRowStyle is the lipgloss style used for even-numbered table rows.
-	EvenRowStyle = CellStyle.Copy().Foreground(lightGray)
-	// BorderStyle is the lipgloss style used for the table border.
-	BorderStyle = lipgloss.NewStyle().Foreground(purple)
 )
 
 type ListCmd struct {
@@ -62,7 +46,7 @@ func (ListCmd) Usage() string {
 }
 
 func (l *ListCmd) SetFlags(f *flag.FlagSet) {
-	f.StringVar(&l.output, "output", "plain", "Output format\nMust be one of: [plain, table, json, html, csv]")
+	f.StringVar(&l.output, "output", "plain", "Output format\nMust be one of: [plain, json, html, csv]")
 	f.StringVar(&l.location, "location", "10001", "Filter by location of the properties (can be neighborhood, zip code, etc.).\nType this into your search bar on zillow.com if you want to confirm the format.")
 	f.StringVar(&l.property_type, "property_type", "", "Filter by property type\nMust be one of: [APARTMENT, CONDO, MULTI_FAMILY, SINGLE_FAMILY]")
 	f.BoolVar(&l.sold, "sold", false, "Filter by sold properties")
@@ -101,12 +85,6 @@ func (l ListCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...any) subcomm
 		}
 	case "plain":
 		outputPlain(d)
-	case "table":
-		err := outputTable(d)
-		if err != nil {
-			fmt.Fprintf(f.Output(), "Error generating table output: %v\n", err)
-			return subcommands.ExitFailure
-		}
 	case "json":
 		err := outputJSON(d)
 		if err != nil {
@@ -122,7 +100,6 @@ func (l ListCmd) Execute(ctx context.Context, f *flag.FlagSet, _ ...any) subcomm
 	return subcommands.ExitSuccess
 }
 
-// TODO: Fix all formats
 func outputHTML(d helpers.Details) error {
 	houses := zillow.Query(d)
 
@@ -172,53 +149,88 @@ func outputPlain(d helpers.Details) {
 
 	header := lipgloss.NewStyle().Bold(true).Underline(true).Foreground(lipgloss.Color("254"))
 	separator := lipgloss.NewStyle().Foreground(lipgloss.Color("#555"))
-	fieldfmt := lipgloss.NewStyle()
 
-	fmt.Println(header.Render("House Listings:\n"))
+	fmt.Println(header.Render("\nHouse Listings:"))
+
 	for _, house := range houses {
-		typeOfHouse := reflect.TypeOf(house)
-		for i := 0; i < typeOfHouse.NumField(); i++ {
-			field := typeOfHouse.Field(i)
-			fieldName := field.Name
-			fieldValue := reflect.ValueOf(house).Field(i).Interface()
+		fmt.Println(header.Render(fmt.Sprintf("\n%v", house.Property.Address)))
 
-			if fieldValue != "" {
-				if fieldName == "Address" {
-					fmt.Println(header.Render(fmt.Sprintf("%v", fieldValue)))
-				} else {
-					fmt.Println(separator.Render("- "+fieldName+": ") + fieldfmt.Render(fmt.Sprintf("%v", fieldValue)))
-				}
+		// Top-level properties
+		// Prices
+		if house.Property.ListPrice > 0 {
+			fmt.Printf("%s $%d\n", separator.Render("- List Price:"), house.Property.ListPrice)
+		}
+		if house.Property.SoldPrice > 0 {
+			fmt.Printf("%s $%d\n", separator.Render("- Sold Price:"), house.Property.SoldPrice)
+		}
+		if house.Property.PriceDiff > 0 {
+			fmt.Printf("%s $%d\n", separator.Render("- Price Diff:"), house.Property.PriceDiff)
+		}
+		if house.Property.PriceDiffPercent > 0 {
+			fmt.Printf("%s %d%%\n", separator.Render("- Price Diff %:"), int64(house.Property.PriceDiffPercent))
+		}
+		if house.Property.ListDate != "" {
+			fmt.Printf("%s %s\n", separator.Render("- List Date:"), house.Property.ListDate)
+		}
+		if house.Property.SoldDate != "" {
+			fmt.Printf("%s %s\n", separator.Render("- Sold Date:"), house.Property.SoldDate)
+		}
+
+		// Misc
+		if house.Property.DatePostedString != "" {
+			fmt.Printf("%s %s\n", separator.Render("- Date Posted:"), house.Property.DatePostedString)
+		}
+		if house.Property.HomeStatus != "" {
+			fmt.Printf("%s %s\n", separator.Render("- Home Status:"), house.Property.HomeStatus)
+		}
+		if house.Property.HomeType != "" {
+			fmt.Printf("%s %s\n", separator.Render("- Home Type:"), house.Property.HomeType)
+		}
+		if house.Property.Description != "" {
+			fmt.Printf("%s %s\n", separator.Render("- Description:"), house.Property.Description)
+		}
+
+		// Links
+		fmt.Println(separator.Render("- Links:"))
+		if house.Property.FullUrl != "" {
+			fmt.Printf("  %s %s\n", separator.Render("- Full URL:"), house.Property.FullUrl)
+		}
+		if house.Property.MapsUrl != "" {
+			fmt.Printf("  %s %s\n", separator.Render("- Maps URL:"), house.Property.MapsUrl)
+		}
+		if house.Property.DesktopWebHdpImageLink != "" {
+			fmt.Printf("  %s %s\n", separator.Render("- Image Link:"), house.Property.DesktopWebHdpImageLink)
+		}
+
+		// Facts
+		fmt.Println(separator.Render("- Facts:"))
+		if house.Property.ResoFacts.Bedrooms > 0 {
+			fmt.Printf("  %s %d\n", separator.Render("- Bedrooms:"), house.Property.ResoFacts.Bedrooms)
+		}
+		if house.Property.ResoFacts.Bathrooms > 0 {
+			fmt.Printf("  %s %d\n", separator.Render("- Bathrooms:"), house.Property.ResoFacts.Bathrooms)
+		}
+		if house.Property.ResoFacts.LivingArea != "" {
+			fmt.Printf("  %s %s\n", separator.Render("- Living Area:"), house.Property.ResoFacts.LivingArea)
+		}
+
+		// Open house
+		if len(house.Property.OpenHouseSchedule) > 0 {
+			fmt.Println(separator.Render("- Showing:"))
+			for _, oh := range house.Property.OpenHouseSchedule {
+				fmt.Printf("  %s %v -> %v\n", separator.Render("-"), oh.StartTime, oh.EndTime)
 			}
 		}
 
-		fmt.Println()
-	}
-}
-
-func outputTable(d helpers.Details) error {
-	t := table.New().
-		Border(lipgloss.NormalBorder()).
-		BorderRow(true).
-		BorderStyle(lipgloss.NewStyle().Foreground(lipgloss.Color("99"))).
-		StyleFunc(func(row, col int) lipgloss.Style {
-			switch {
-			case row == 0:
-				return HeaderStyle
-			case row%2 == 0:
-				return EvenRowStyle
-			default:
-				return OddRowStyle
+		// Price history
+		if len(house.Property.PriceHistory) > 0 {
+			fmt.Println(separator.Render("- Price History:"))
+			for _, ph := range house.Property.PriceHistory {
+				fmt.Printf("  %s Date: %v, Event: %v, Price: $%v\n", separator.Render("-"), ph.Date, ph.Event, ph.Price)
 			}
-		}).
-		Headers(helpers.StructToSlice(helpers.House{})...).
-		Rows(helpers.SliceToRow(zillow.Query(d))...)
+		}
 
-	if t == nil {
-		return fmt.Errorf("failed to create table")
 	}
-
-	fmt.Println(t)
-	return nil
 }
 
 func outputJSON(d helpers.Details) error {
@@ -229,7 +241,7 @@ func outputJSON(d helpers.Details) error {
 	}
 
 	file := filepath.Join(os.Getenv("TEMP"), "listings.json")
-	// output to a JSON file called "filepath.Join(os.Getenv("TEMP"), "listings.html")"
+	// output to a JSON file
 	if err := os.WriteFile(file, s, 0644); err != nil {
 		return fmt.Errorf("failed to write JSON file: %w", err)
 	}
@@ -239,6 +251,7 @@ func outputJSON(d helpers.Details) error {
 	return nil
 }
 
+// TODO: Fix CSV formats
 func outputCSV(d helpers.Details) error {
 	houses := zillow.Query(d)
 
@@ -246,7 +259,7 @@ func outputCSV(d helpers.Details) error {
 		return nil
 	}
 
-	typeOfHouse := reflect.TypeOf(houses[0])
+	typeOfHouse := reflect.TypeOf(houses[0].Property)
 	header := make([]string, typeOfHouse.NumField())
 	for i := 0; i < typeOfHouse.NumField(); i++ {
 		field := typeOfHouse.Field(i)
@@ -265,10 +278,10 @@ func outputCSV(d helpers.Details) error {
 	writer.Write(header)
 
 	for _, house := range houses {
-		typeOfHouse := reflect.TypeOf(house)
+		typeOfHouse := reflect.TypeOf(house.Property)
 		row := make([]string, typeOfHouse.NumField())
 		for i := 0; i < typeOfHouse.NumField(); i++ {
-			fieldValue := reflect.ValueOf(house).Field(i).Interface()
+			fieldValue := reflect.ValueOf(house.Property).Field(i).Interface()
 			row[i] = fmt.Sprintf("%v", fieldValue)
 		}
 

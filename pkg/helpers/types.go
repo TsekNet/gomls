@@ -12,14 +12,15 @@ type House struct {
 		HomeType               string `json:"homeType,omitempty"`
 
 		// Non-JSON fields (manually manipulated)
-		Address   string `json:"address,omitempty"`
-		FullUrl   string `json:"fullUrl,omitempty"`
-		MapsUrl   string `json:"mapsURL,omitempty"`
-		PriceDiff int    `json:"priceDiff",omitempty`
-		ListPrice int    `json:"listPrice,omitempty"`
-		ListDate  string `json:"listDate,omitempty"`
-		SoldPrice int    `json:"soldPrice,omitempty"`
-		SoldDate  string `json:"soldDate,omitempty"`
+		Address          string `json:"address,omitempty"`
+		FullUrl          string `json:"fullUrl,omitempty"`
+		MapsUrl          string `json:"mapsURL,omitempty"`
+		PriceDiff        int    `json:"priceDiff",omitempty`
+		PriceDiffPercent int    `json:"priceDiffPercent,omitempty"`
+		ListPrice        int    `json:"listPrice,omitempty"`
+		ListDate         string `json:"listDate,omitempty"`
+		SoldPrice        int    `json:"soldPrice,omitempty"`
+		SoldDate         string `json:"soldDate,omitempty"`
 
 		ResoFacts struct {
 			Bathrooms  int    `json:"bathrooms,omitempty"`

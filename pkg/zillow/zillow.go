@@ -2,10 +2,8 @@
 package zillow
 
 import (
-	"encoding/json"
 	"fmt"
 	"gomls/pkg/helpers"
-	"regexp"
 	"strings"
 	"time"
 
@@ -54,36 +52,17 @@ func init() {
 	})
 }
 
-func stringToJSON(jsonString string) *helpers.House {
-	// Create a string from the extracted JSON
-	var dataMap map[string]interface{}
-	json.Unmarshal([]byte(jsonString), &dataMap)
-	gdpClientCache := dataMap["props"].(map[string]interface{})["pageProps"].(map[string]interface{})["componentProps"].(map[string]interface{})["gdpClientCache"].(string)
-
-	// Strip the weird *SaleShopper* first JSON key
-	gdpClientCache = regexp.MustCompile(`{".*SaleShopper.*}":`).ReplaceAllString(gdpClientCache, "")
-	// Also strip the trailing closing bracket (from above)
-	gdpClientCache = gdpClientCache[:len(gdpClientCache)-1]
-
-	// Create a new House struct from the JSON
-	jsonHouse := new(helpers.House)
-
-	// Intentionally ignore errors, as some fields will be blank (not from JSON)
-	json.Unmarshal([]byte(gdpClientCache), jsonHouse)
-
-	return jsonHouse
-}
-
 func newDetails(d helpers.Details, h helpers.House) *helpers.House {
 	url := h.Property.HdpUrl
 	fullAddress := strings.SplitN(url, "/", -1)[2]
-	h.Property.Address = strings.Split(fullAddress, "_")[0]
+	h.Property.Address = strings.ReplaceAll(fullAddress, "-", " ")
 	h.Property.MapsUrl = fmt.Sprintf("https://maps.google.com/?q=%s", fullAddress)
 	h.Property.FullUrl = fmt.Sprintf("%s%s", base, url)
 
 	for k, v := range h.Property.PriceHistory {
 		if v.Event == "Listed for sale" && h.Property.ListPrice == 0 {
 			h.Property.ListPrice = v.Price
+			h.Property.ListDate = v.Date
 			h.Property.PriceHistory = h.Property.PriceHistory[k:]
 		}
 
@@ -91,11 +70,13 @@ func newDetails(d helpers.Details, h helpers.House) *helpers.House {
 		if d.Sold {
 			if v.Event == "Sold" && h.Property.SoldPrice == 0 {
 				h.Property.SoldPrice = v.Price
+				h.Property.SoldDate = v.Date
 				h.Property.PriceHistory = h.Property.PriceHistory[k:]
 			}
 
 			if h.Property.ListPrice != 0 && h.Property.SoldPrice != 0 {
 				h.Property.PriceDiff = h.Property.SoldPrice - h.Property.ListPrice
+				h.Property.PriceDiffPercent = int(float64(h.Property.SoldPrice) / float64(h.Property.ListPrice) * 100)
 			}
 		}
 	}
@@ -154,7 +135,7 @@ func Query(d helpers.Details) helpers.HouseSlice {
 		}
 
 		// Convert the string to a JSON object
-		j := stringToJSON(e.Text)
+		j := helpers.StringToJSON(e.Text)
 
 		// Initialize values in the House struct
 		h := newDetails(d, *j)
