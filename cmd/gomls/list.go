@@ -226,7 +226,14 @@ func outputPlain(d helpers.Details) {
 		if len(house.Property.PriceHistory) > 0 {
 			fmt.Println(separator.Render("- Price History:"))
 			for _, ph := range house.Property.PriceHistory {
-				fmt.Printf("  %s Date: %v, Event: %v, Price: $%v\n", separator.Render("-"), ph.Date, ph.Event, ph.Price)
+				fmt.Printf("  %s %s %s%s %s%s $%d\n",
+					separator.Render("-"),
+					separator.Render("Date:"),
+					ph.Date,
+					separator.Render(", Event:"),
+					ph.Event,
+					separator.Render(", Price:"),
+					ph.Price)
 			}
 		}
 
