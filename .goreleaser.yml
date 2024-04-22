@@ -14,10 +14,9 @@ builds:
       - windows
     goarch:
       - amd64
-    main: ./cmd/gomls/main.go
 archives:
   # Optionally override the matrix generation and specify only the final list of targets.
   - format: binary
-    name_template: "cli_{{ .Os }}"
+    name_template: "{{ tolower .ProjectName }}_{{ .Os }}"
 checksum:
   name_template: "checksums.txt"
