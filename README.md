@@ -12,7 +12,7 @@ Download the [executable](https://github.com/TsekNet/gomls/releases) from `/rele
 ## Usage
 
 ```sh
-.\gomls.exe -help
+.\gomls_windows.exe -help
 Usage: .\gomls.exe <flags> <subcommand> <subcommand args>
 
 Subcommands:
@@ -29,7 +29,7 @@ Top-level flags (use ".\gomls.exe flags" for a full list):
   ```
 
 ```sh
-.\gomls.exe list -help
+.\gomls_windows.exe list -help
 gomls.exe list
   -baths int
         Filter by number of baths
