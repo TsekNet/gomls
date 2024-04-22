@@ -3,6 +3,7 @@
 on:
   push:
     branches: [main]
+    tags: ['v*'] # Only create artifacts when there is a semantic-versioned release on GitHub (ex: v1.0.1)
   pull_request:
     branches: [main]
 
