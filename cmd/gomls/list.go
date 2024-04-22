@@ -143,7 +143,12 @@ func outputHTML(d helpers.Details) error {
 		return fmt.Errorf("failed to execute template: %w", err)
 	}
 
-	fmt.Printf("Wrote HTML file: %q\n", file)
+	path, err := filepath.Abs(file)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path of file: %w", err)
+	}
+
+	fmt.Printf("Wrote HTML file: %q\n", path)
 
 	return nil
 }
@@ -254,7 +259,12 @@ func outputJSON(d helpers.Details) error {
 		return fmt.Errorf("failed to write JSON file: %w", err)
 	}
 
-	fmt.Printf("Wrote JSON file: %q\n", file)
+	path, err := filepath.Abs(file)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path of file: %w", err)
+	}
+
+	fmt.Printf("Wrote JSON file: %q\n", path)
 
 	return nil
 }
@@ -350,7 +360,12 @@ func outputCSV(d helpers.Details) error {
 		return fmt.Errorf("failed to write CSV file: %w", err)
 	}
 
-	fmt.Printf("Wrote CSV file: %q\n", file)
+	path, err := filepath.Abs(file)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path of file: %w", err)
+	}
+
+	fmt.Printf("Wrote CSV file: %q\n", path)
 
 	return nil
 }
