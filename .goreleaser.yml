@@ -14,7 +14,7 @@ builds:
       - windows
     goarch:
       - amd64
-    main: ./cli/
+    main: ./cmd/gomls/main.go
 archives:
   # Optionally override the matrix generation and specify only the final list of targets.
   - format: binary
