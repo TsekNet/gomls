@@ -2,9 +2,7 @@
 
 on:
   push:
-    # Only create artifacts when there is a semantic-versioned release on GitHub (ex: v1.0.1)
-    tags:
-      - 'v*'
+    branches: [main]
 
 permissions:
   contents: write
