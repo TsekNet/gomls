@@ -18,6 +18,6 @@ builds:
 archives:
   # Optionally override the matrix generation and specify only the final list of targets.
   - format: binary
-    name_template: "{{ tolower .ProjectName }}_{{ .Os }}"
+    name_template: "{{ tolower .ProjectName }}"
 checksum:
   name_template: "checksums.txt"
