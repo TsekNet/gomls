@@ -126,7 +126,10 @@ func outputHTML(d helpers.Details) error {
 
 	// Parse the template
 	t := template.New("listings.html")
-	t.Parse(helpers.TemplateHTML)
+	t, err = t.Parse(helpers.TemplateHTML)
+	if err != nil {
+		return fmt.Errorf("failed to parse template: %w", err)
+	}
 
 	// Create and write HTML file
 	htmlFile, err := os.Create(file)
@@ -140,8 +143,7 @@ func outputHTML(d helpers.Details) error {
 		return fmt.Errorf("failed to execute template: %w", err)
 	}
 
-	fmt.Printf("Opening %q in your browser...\n", file)
-	helpers.OpenBrowser(file)
+	fmt.Printf("Wrote HTML file: %q\n", file)
 
 	return nil
 }
@@ -178,6 +180,18 @@ func outputPlain(d helpers.Details) {
 			fmt.Printf("%s %s\n", separator.Render("- List Date:"), house.Property.ListDate)
 		}
 
+		// Facts
+		fmt.Println(separator.Render("- Facts:"))
+		if house.Property.ResoFacts.Bedrooms > 0 {
+			fmt.Printf("  %s %d\n", separator.Render("- Bedrooms:"), house.Property.ResoFacts.Bedrooms)
+		}
+		if house.Property.ResoFacts.Bathrooms > 0 {
+			fmt.Printf("  %s %d\n", separator.Render("- Bathrooms:"), house.Property.ResoFacts.Bathrooms)
+		}
+		if house.Property.ResoFacts.LivingArea != "" {
+			fmt.Printf("  %s %s\n", separator.Render("- Living Area:"), house.Property.ResoFacts.LivingArea)
+		}
+
 		// Misc
 		if house.Property.HomeStatus != "" {
 			fmt.Printf("%s %s\n", separator.Render("- Home Status:"), house.Property.HomeStatus)
@@ -199,18 +213,6 @@ func outputPlain(d helpers.Details) {
 		}
 		for _, photo := range house.Property.ResponsivePhotos {
 			fmt.Printf("  %s %s\n", separator.Render("- Image URL:"), photo.Url)
-		}
-
-		// Facts
-		fmt.Println(separator.Render("- Facts:"))
-		if house.Property.ResoFacts.Bedrooms > 0 {
-			fmt.Printf("  %s %d\n", separator.Render("- Bedrooms:"), house.Property.ResoFacts.Bedrooms)
-		}
-		if house.Property.ResoFacts.Bathrooms > 0 {
-			fmt.Printf("  %s %d\n", separator.Render("- Bathrooms:"), house.Property.ResoFacts.Bathrooms)
-		}
-		if house.Property.ResoFacts.LivingArea != "" {
-			fmt.Printf("  %s %s\n", separator.Render("- Living Area:"), house.Property.ResoFacts.LivingArea)
 		}
 
 		// Open house
@@ -273,11 +275,12 @@ func outputCSV(d helpers.Details) error {
 		"Sold Date",
 		"List Date",
 
-		"Home Status",
-		"Home Type",
 		"Bedrooms",
 		"Bathrooms",
 		"Living Area",
+		"Home Status",
+		"Home Type",
+		"Description",
 
 		"Showing",
 		"Price History",
@@ -315,11 +318,12 @@ func outputCSV(d helpers.Details) error {
 			house.Property.SoldDate,
 			house.Property.ListDate,
 
-			house.Property.HomeStatus,
-			house.Property.HomeType,
 			strconv.Itoa(int(house.Property.ResoFacts.Bedrooms)),
 			strconv.Itoa(int(house.Property.ResoFacts.Bathrooms)),
 			house.Property.ResoFacts.LivingArea,
+			house.Property.HomeStatus,
+			house.Property.HomeType,
+			house.Property.Description,
 
 			strings.Join(schedule, "|"),
 			strings.Join(history, "|"),

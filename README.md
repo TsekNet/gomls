@@ -40,7 +40,7 @@ gomls.exe list
         Type this into your search bar on zillow.com if you want to confirm the format. (default "10001")
   -output string
         Output format
-        Must be one of: [plain, table, json, html, csv] (default "plain")
+        Must be one of: [plain, json, html, csv] (default "plain")
   -price int
         Filter by price
   -property_type string
