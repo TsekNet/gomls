@@ -52,7 +52,7 @@ gomls.exe list
 
 ## Screenshots
 
-> [!TIP] See the /examples folder for sample output files
+> 💡 See the /examples folder for sample output files
 
 ### CSV output
 
