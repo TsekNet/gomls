@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/csv"
 	"encoding/json"
@@ -12,7 +13,8 @@ import (
 	"html/template"
 	"os"
 	"path/filepath"
-	"reflect"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/charmbracelet/lipgloss"
@@ -157,11 +159,11 @@ func outputPlain(d helpers.Details) {
 
 		// Top-level properties
 		// Prices
-		if house.Property.ListPrice > 0 {
-			fmt.Printf("%s $%d\n", separator.Render("- List Price:"), house.Property.ListPrice)
-		}
 		if house.Property.SoldPrice > 0 {
 			fmt.Printf("%s $%d\n", separator.Render("- Sold Price:"), house.Property.SoldPrice)
+		}
+		if house.Property.ListPrice > 0 {
+			fmt.Printf("%s $%d\n", separator.Render("- List Price:"), house.Property.ListPrice)
 		}
 		if house.Property.PriceDiff > 0 {
 			fmt.Printf("%s $%d\n", separator.Render("- Price Diff:"), house.Property.PriceDiff)
@@ -169,17 +171,14 @@ func outputPlain(d helpers.Details) {
 		if house.Property.PriceDiffPercent > 0 {
 			fmt.Printf("%s %d%%\n", separator.Render("- Price Diff %:"), int64(house.Property.PriceDiffPercent))
 		}
-		if house.Property.ListDate != "" {
-			fmt.Printf("%s %s\n", separator.Render("- List Date:"), house.Property.ListDate)
-		}
 		if house.Property.SoldDate != "" {
 			fmt.Printf("%s %s\n", separator.Render("- Sold Date:"), house.Property.SoldDate)
 		}
+		if house.Property.ListDate != "" {
+			fmt.Printf("%s %s\n", separator.Render("- List Date:"), house.Property.ListDate)
+		}
 
 		// Misc
-		if house.Property.DatePostedString != "" {
-			fmt.Printf("%s %s\n", separator.Render("- Date Posted:"), house.Property.DatePostedString)
-		}
 		if house.Property.HomeStatus != "" {
 			fmt.Printf("%s %s\n", separator.Render("- Home Status:"), house.Property.HomeStatus)
 		}
@@ -198,8 +197,8 @@ func outputPlain(d helpers.Details) {
 		if house.Property.MapsUrl != "" {
 			fmt.Printf("  %s %s\n", separator.Render("- Maps URL:"), house.Property.MapsUrl)
 		}
-		if house.Property.DesktopWebHdpImageLink != "" {
-			fmt.Printf("  %s %s\n", separator.Render("- Image Link:"), house.Property.DesktopWebHdpImageLink)
+		for _, photo := range house.Property.ResponsivePhotos {
+			fmt.Printf("  %s %s\n", separator.Render("- Image URL:"), photo.Url)
 		}
 
 		// Facts
@@ -258,44 +257,96 @@ func outputJSON(d helpers.Details) error {
 	return nil
 }
 
-// TODO: Fix CSV formats
 func outputCSV(d helpers.Details) error {
 	houses := zillow.Query(d)
+	var b bytes.Buffer
+	w := csv.NewWriter(&b)
 
-	if len(houses) == 0 {
-		return nil
-	}
+	records := [][]string{{
+		"Address",
 
-	typeOfHouse := reflect.TypeOf(houses[0].Property)
-	header := make([]string, typeOfHouse.NumField())
-	for i := 0; i < typeOfHouse.NumField(); i++ {
-		field := typeOfHouse.Field(i)
-		header[i] = field.Name
-	}
+		"Sold Price",
+		"List Price",
+		"Price Diff",
+		"Price Diff %",
 
-	file, err := os.Create(filepath.Join(os.Getenv("TEMP"), "listings.csv"))
-	if err != nil {
-		return fmt.Errorf("failed to create CSV file: %w", err)
-	}
-	defer file.Close()
+		"Sold Date",
+		"List Date",
 
-	writer := csv.NewWriter(file)
-	defer writer.Flush()
+		"Home Status",
+		"Home Type",
+		"Bedrooms",
+		"Bathrooms",
+		"Living Area",
 
-	writer.Write(header)
+		"Showing",
+		"Price History",
+
+		"Full URL",
+		"Maps URL",
+		"Image URL",
+	}}
 
 	for _, house := range houses {
-		typeOfHouse := reflect.TypeOf(house.Property)
-		row := make([]string, typeOfHouse.NumField())
-		for i := 0; i < typeOfHouse.NumField(); i++ {
-			fieldValue := reflect.ValueOf(house.Property).Field(i).Interface()
-			row[i] = fmt.Sprintf("%v", fieldValue)
+		schedule := make([]string, len(house.Property.OpenHouseSchedule))
+		for i, oh := range house.Property.OpenHouseSchedule {
+			schedule[i] = fmt.Sprintf("%s;%s", oh.StartTime, oh.EndTime)
 		}
 
-		writer.Write(row)
+		history := make([]string, len(house.Property.PriceHistory))
+		for i, ph := range house.Property.PriceHistory {
+			history[i] = fmt.Sprintf("%s;%s;$%d", ph.Event, ph.Date,
+				ph.Price)
+		}
+
+		photos := make([]string, len(house.Property.ResponsivePhotos))
+		for i, p := range house.Property.ResponsivePhotos {
+			photos[i] = p.Url
+		}
+
+		records = append(records, []string{
+			house.Property.Address,
+
+			strconv.Itoa(house.Property.SoldPrice),
+			strconv.Itoa(house.Property.ListPrice),
+			strconv.Itoa(house.Property.PriceDiff),
+			strconv.Itoa(house.Property.PriceDiffPercent),
+
+			house.Property.SoldDate,
+			house.Property.ListDate,
+
+			house.Property.HomeStatus,
+			house.Property.HomeType,
+			strconv.Itoa(int(house.Property.ResoFacts.Bedrooms)),
+			strconv.Itoa(int(house.Property.ResoFacts.Bathrooms)),
+			house.Property.ResoFacts.LivingArea,
+
+			strings.Join(schedule, "|"),
+			strings.Join(history, "|"),
+
+			house.Property.FullUrl,
+			house.Property.MapsUrl,
+			strings.Join(photos, "|"),
+		})
+
+		// Replace empty ints with empty strings
+		for i := range records[len(records)-1] {
+			if records[len(records)-1][i] == "0" {
+				records[len(records)-1][i] = ""
+			}
+		}
 	}
 
-	fmt.Printf("Wrote CSV file: %q\n", file.Name())
+	if err := w.WriteAll(records); err != nil {
+		return fmt.Errorf("failed to write CSV data: %w", err)
+	}
+
+	file := filepath.Join(os.Getenv("TEMP"), "listings.csv")
+	if err := os.WriteFile(file, b.Bytes(), 0644); err != nil {
+		return fmt.Errorf("failed to write CSV file: %w", err)
+	}
+
+	fmt.Printf("Wrote CSV file: %q\n", file)
 
 	return nil
 }

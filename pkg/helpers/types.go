@@ -4,12 +4,10 @@
 // Pointers denote that data is not from the JSON and can be empty
 type House struct {
 	Property struct {
-		DatePostedString       string `json:"datePostedString,omitempty"`
-		Description            string `json:"description,omitempty"`
-		DesktopWebHdpImageLink string `json:"desktopWebHdpImageLink,omitempty"`
-		HdpUrl                 string `json:"hdpUrl,omitempty"`
-		HomeStatus             string `json:"homeStatus,omitempty"`
-		HomeType               string `json:"homeType,omitempty"`
+		Description string `json:"description,omitempty"`
+		HdpUrl      string `json:"hdpUrl,omitempty"`
+		HomeStatus  string `json:"homeStatus,omitempty"`
+		HomeType    string `json:"homeType,omitempty"`
 
 		// Non-JSON fields (manually manipulated)
 		Address          string `json:"address,omitempty"`
@@ -32,6 +30,10 @@ type House struct {
 			StartTime string `json:"startTime,omitempty"`
 			EndTime   string `json:"endTime,omitempty"`
 		} `json:"openHouseSchedule,omitempty"`
+
+		ResponsivePhotos [1]struct {
+			Url string `json:"url,omitempty"`
+		}
 
 		PriceHistory []struct {
 			Date  string `json:"date,omitempty"`
