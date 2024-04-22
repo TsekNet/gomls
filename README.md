@@ -1,7 +1,7 @@
 # gomls
 
 [![License:
-MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/TsekNet/gomls/blob/master/LICENSE)
+MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/TsekNet/gomls/blob/master/LICENSE)[![release](https://github.com/TsekNet/gomls/actions/workflows/release.yml/badge.svg)](https://github.com/TsekNet/gomls/actions/workflows/release.yml)
 
 Command-line tool that scrapes real estate listings from the web (with filters).
 
