@@ -6,8 +6,9 @@ github.com/antchfx/htmlquery v1.3.1 h1:wm0LxjLMsZhRHfQKKZscDf2COyH4vDYA3wyH+qZ+Y
 github.com/antchfx/htmlquery v1.3.1/go.mod h1:PTj+f1V2zksPlwNt7uVvZPsxpKNa7mlVliCRxLX6Nx8=
 github.com/antchfx/xmlquery v1.4.0 h1:xg2HkfcRK2TeTbdb0m1jxCYnvsPaGY/oeZWTGqX/0hA=
 github.com/antchfx/xmlquery v1.4.0/go.mod h1:Ax2aeaeDjfIw3CwXKDQ0GkwZ6QlxoChlIBP+mGnDFjI=
-github.com/antchfx/xpath v1.3.0 h1:nTMlzGAK3IJ0bPpME2urTuFL76o4A96iYvoKFHRXJgc=
 github.com/antchfx/xpath v1.3.0/go.mod h1:i54GszH55fYfBmoZXapTHN8T8tkcHfRgLyVwwqzXNcs=
+github.com/antchfx/xpath v1.3.6 h1:s0y+ElRRtTQdfHP609qFu0+c6bglDv20pqOViQjjdPI=
+github.com/antchfx/xpath v1.3.6/go.mod h1:i54GszH55fYfBmoZXapTHN8T8tkcHfRgLyVwwqzXNcs=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1 h1:HwpRHbFMcZLEVr42D4p7XBqjyuxQH5SMiErDT4WkJ2k=
 github.com/aymanbagabas/go-osc52/v2 v2.0.1/go.mod h1:uYgXzlJ7ZpABp8OJ+exZzJJhRNQ2ASbcXHWsFqH8hp8=
 github.com/charmbracelet/lipgloss v0.10.0 h1:KWeXFSexGcfahHX+54URiZGkBFazf70JNMtwg/AFW3s=
